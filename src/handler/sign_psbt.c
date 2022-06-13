@@ -795,6 +795,9 @@ static void output_keys_callback(dispatcher_context_t *dc,
 
         if ((key_type == PSBT_OUT_BIP32_DERIVATION || key_type == PSBT_OUT_TAP_BIP32_DERIVATION) &&
             !state->cur.in_out.has_bip32_derivation) {
+            // TODO: we need to get the get and parse the key to identify the right
+            // change/address_index for the input we're working with.
+
             // The first time that we encounter a PSBT_OUT_BIP32_DERIVATION or
             // PSBT_OUT_TAP_BIP32_DERIVATION key, we store the pubkey.
             state->cur.in_out.has_bip32_derivation = true;
@@ -1047,7 +1050,7 @@ static void sign_init(dispatcher_context_t *dc) {
 
     state->segwit_hashes_computed = false;
 
-    state->cur_key_index = 0;
+    state->cur_placeholder_index = 0;
     dc->next(sign_find_next_internal_key);
 }
 
@@ -1058,13 +1061,26 @@ static void sign_find_next_internal_key(dispatcher_context_t *dc) {
     LOG_PROCESSOR(dc, __FILE__, __LINE__, __func__);
 
     // find and parse our registered key info in the wallet
-    while (state->cur_key_index < state->wallet_header_n_keys) {
+    while (true) {
         uint8_t key_info_str[MAX_POLICY_KEY_INFO_LEN];
+
+        int n_key_placeholders = get_key_placeholder_by_index(&state->wallet_policy_map,
+                                                              state->cur_placeholder_index,
+                                                              &state->cur_placeholder);
+        if (n_key_placeholders < 0) {
+            SEND_SW(dc, SW_BAD_STATE);  // should never happen
+            return;
+        }
+
+        if (state->cur_placeholder_index >= n_key_placeholders) {
+            // all keys have been processed
+            break;
+        }
 
         int key_info_len = call_get_merkle_leaf_element(dc,
                                                         state->wallet_header_keys_info_merkle_root,
                                                         state->wallet_header_n_keys,
-                                                        state->cur_key_index,
+                                                        state->cur_placeholder.key_index,
                                                         key_info_str,
                                                         sizeof(key_info_str));
 
@@ -1076,22 +1092,21 @@ static void sign_find_next_internal_key(dispatcher_context_t *dc) {
         // Make a sub-buffer for the pubkey info
         buffer_t key_info_buffer = buffer_create(key_info_str, key_info_len);
 
-        policy_map_key_info_t our_key_info;
-        if (parse_policy_map_key_info(&key_info_buffer,
-                                      &our_key_info,
-                                      state->wallet_header_version) == -1) {
+        policy_map_key_info_t key_info;
+        if (parse_policy_map_key_info(&key_info_buffer, &key_info, state->wallet_header_version) ==
+            -1) {
             SEND_SW(dc, SW_BAD_STATE);  // should never happen
             return;
         }
 
-        uint32_t fpr = read_u32_be(our_key_info.master_key_fingerprint, 0);
+        uint32_t fpr = read_u32_be(key_info.master_key_fingerprint, 0);
         if (fpr == state->master_key_fingerprint) {
             // it could be a collision on the fingerprint; we verify that we can actually generate
             // the same pubkey
             char pubkey_derived[MAX_SERIALIZED_PUBKEY_LENGTH + 1];
             int serialized_pubkey_len =
-                get_serialized_extended_pubkey_at_path(our_key_info.master_key_derivation,
-                                                       our_key_info.master_key_derivation_len,
+                get_serialized_extended_pubkey_at_path(key_info.master_key_derivation,
+                                                       key_info.master_key_derivation_len,
                                                        G_coin_config->bip32_pubkey_version,
                                                        pubkey_derived);
             if (serialized_pubkey_len == -1) {
@@ -1099,11 +1114,10 @@ static void sign_find_next_internal_key(dispatcher_context_t *dc) {
                 return;
             }
 
-            if (strncmp(our_key_info.ext_pubkey, pubkey_derived, MAX_SERIALIZED_PUBKEY_LENGTH) ==
-                0) {
-                state->our_key_derivation_length = our_key_info.master_key_derivation_len;
-                for (int i = 0; i < our_key_info.master_key_derivation_len; i++) {
-                    state->our_key_derivation[i] = our_key_info.master_key_derivation[i];
+            if (strncmp(key_info.ext_pubkey, pubkey_derived, MAX_SERIALIZED_PUBKEY_LENGTH) == 0) {
+                state->our_key_derivation_length = key_info.master_key_derivation_len;
+                for (int i = 0; i < key_info.master_key_derivation_len; i++) {
+                    state->our_key_derivation[i] = key_info.master_key_derivation[i];
                 }
 
                 // internal key, start processing the inputs
@@ -1114,7 +1128,7 @@ static void sign_find_next_internal_key(dispatcher_context_t *dc) {
         }
 
         // Not an internal key, move on
-        ++state->cur_key_index;
+        ++state->cur_placeholder_index;
     }
 
     // no more keys to process; we're done
@@ -1136,7 +1150,7 @@ static void sign_process_input_map(dispatcher_context_t *dc) {
 
     if (state->cur_input_index >= state->n_inputs) {
         // all inputs already processed, move on to the next internal key (if any)
-        ++state->cur_key_index;
+        ++state->cur_placeholder_index;
         dc->next(sign_find_next_internal_key);
         return;
     }

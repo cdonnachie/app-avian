@@ -34,6 +34,7 @@ int is_in_out_internal(dispatcher_context_t *dispatcher_context,
         return -1;
     } else if (script_type == SCRIPT_TYPE_UNKNOWN_SEGWIT) {
         // An unknown but valid segwit script type, definitely external.
+        PRINTF("Unknown segwit script type\n");
         return 0;
     } else if (script_type == SCRIPT_TYPE_P2TR) {
         // taproot output, use PSBT_{IN,OUT}_TAP_BIP32_DERIVATION
