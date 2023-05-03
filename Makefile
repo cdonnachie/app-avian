@@ -42,35 +42,33 @@ endif
 # Flags: BOLOS_SETTINGS, GLOBAL_PIN, DERIVE_MASTER
 APP_LOAD_FLAGS=--appFlags 0xa50
 
-ifeq ($(COIN),bitcoin_testnet)
+ifeq ($(COIN),avian_testnet)
 
-# Bitcoin testnet, no legacy support
+# Avian testnet
 DEFINES   += BIP32_PUBKEY_VERSION=0x043587CF
 DEFINES   += BIP44_COIN_TYPE=1
 DEFINES   += BIP44_COIN_TYPE_2=1
 DEFINES   += COIN_P2PKH_VERSION=111
 DEFINES   += COIN_P2SH_VERSION=196
-DEFINES   += COIN_NATIVE_SEGWIT_PREFIX=\"tb\"
-DEFINES   += COIN_COINID_SHORT=\"TEST\"
+DEFINES   += COIN_COINID_SHORT=\"TAVN\"
 
-APPNAME = "Bitcoin Test"
+APPNAME = "Avian Test"
 
-else ifeq ($(COIN),bitcoin)
+else ifeq ($(COIN),avian)
 
-# Bitcoin mainnet, no legacy support
+# Avian mainnet
 DEFINES   += BIP32_PUBKEY_VERSION=0x0488B21E
-DEFINES   += BIP44_COIN_TYPE=0
-DEFINES   += BIP44_COIN_TYPE_2=0
+DEFINES   += BIP44_COIN_TYPE=921
+DEFINES   += BIP44_COIN_TYPE_2=921
 DEFINES   += COIN_P2PKH_VERSION=0
 DEFINES   += COIN_P2SH_VERSION=5
-DEFINES   += COIN_NATIVE_SEGWIT_PREFIX=\"bc\"
-DEFINES   += COIN_COINID_SHORT=\"BTC\"
+DEFINES   += COIN_COINID_SHORT=\"AVN\"
 
-APPNAME = "Bitcoin"
+APPNAME = "Avian"
 
 else
 ifeq ($(filter clean,$(MAKECMDGOALS)),)
-$(error Unsupported COIN - use bitcoin_testnet, bitcoin)
+$(error Unsupported COIN - use avian_testnet, avian)
 endif
 endif
 

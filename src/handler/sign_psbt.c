@@ -1029,8 +1029,8 @@ preprocess_inputs(dispatcher_context_t *dc,
         }
 
         if (((segwit_version > 0) && (input.sighash_type == SIGHASH_DEFAULT)) ||
-            (input.sighash_type == SIGHASH_ALL)) {
-            PRINTF("Sighash type is SIGHASH_DEFAULT or SIGHASH_ALL\n");
+            (input.sighash_type == SIGHASH_FORKID)) {
+            PRINTF("Sighash type is SIGHASH_DEFAULT or SIGHASH_FORKID\n");
 
         } else if ((segwit_version >= 0) &&
                    ((input.sighash_type == SIGHASH_NONE) ||
@@ -2200,7 +2200,7 @@ static bool __attribute__((noinline)) sign_transaction_input(dispatcher_context_
 
         if (!input->has_sighash_type) {
             // legacy input default to SIGHASH_ALL
-            input->sighash_type = SIGHASH_ALL;
+            input->sighash_type = SIGHASH_FORKID;
         }
 
         uint8_t sighash[32];
@@ -2269,8 +2269,8 @@ static bool __attribute__((noinline)) sign_transaction_input(dispatcher_context_
         uint8_t sighash[32];
         if (segwit_version == 0) {
             if (!input->has_sighash_type) {
-                // segwitv0 inputs default to SIGHASH_ALL
-                input->sighash_type = SIGHASH_ALL;
+                // segwitv0 inputs default to SIGHASH_FORKID
+                input->sighash_type = SIGHASH_FORKID;
             }
 
             if (!compute_sighash_segwitv0(dc, st, hashes, input, cur_input_index, sighash))
