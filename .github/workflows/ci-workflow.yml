@@ -38,9 +38,9 @@ jobs:
 
       - name: Build
         run: |
-          make DEBUG=0 COIN=avian BOLOS_SDK=${{ matrix.SDK }} && mv bin/ bitcoin-bin/
+          make DEBUG=0 COIN=avian BOLOS_SDK=${{ matrix.SDK }} && mv bin/ avian-bin/
           make clean
-          make DEBUG=0 COIN=avian_testnet BOLOS_SDK=${{ matrix.SDK }} && mv bin/ bitcoin-testnet-bin/
+          make DEBUG=0 COIN=avian_testnet BOLOS_SDK=${{ matrix.SDK }} && mv bin/ avian-testnet-bin/
       - name: Upload Avian app binary
         uses: actions/upload-artifact@v2
         with:
@@ -131,7 +131,7 @@ jobs:
       - name: Download Avian Testnet app binary
         uses: actions/download-artifact@v2
         with:
-          name: bitcoin-testnet-app-${{matrix.model}}
+          name: avian-testnet-app-${{matrix.model}}
           path: bin
 
       - name: Run tests
@@ -168,10 +168,10 @@ jobs:
       - name: Clone
         uses: actions/checkout@v2
 
-      - name: Download Bitcoin app binary
+      - name: Download Avian app binary
         uses: actions/download-artifact@v2
         with:
-          name: bitcoin-app-${{matrix.model}}
+          name: avian-app-${{matrix.model}}
           path: bin
 
       - name: Run tests
