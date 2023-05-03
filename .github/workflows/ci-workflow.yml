@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches:
-    - master
-    - develop
+      - master
+      - develop
   pull_request:
     branches:
-    - master
-    - develop
+      - master
+      - develop
 
 jobs:
   job_build:
@@ -38,20 +38,20 @@ jobs:
 
       - name: Build
         run: |
-          make DEBUG=0 COIN=bitcoin BOLOS_SDK=${{ matrix.SDK }} && mv bin/ bitcoin-bin/
+          make DEBUG=0 COIN=avian BOLOS_SDK=${{ matrix.SDK }} && mv bin/ bitcoin-bin/
           make clean
-          make DEBUG=0 COIN=bitcoin_testnet BOLOS_SDK=${{ matrix.SDK }} && mv bin/ bitcoin-testnet-bin/
-      - name: Upload Bitcoin app binary
+          make DEBUG=0 COIN=avian_testnet BOLOS_SDK=${{ matrix.SDK }} && mv bin/ bitcoin-testnet-bin/
+      - name: Upload Avian app binary
         uses: actions/upload-artifact@v2
         with:
-          name: bitcoin-app-${{ matrix.model }}
-          path: bitcoin-bin
+          name: avian-app-${{ matrix.model }}
+          path: avian-bin
 
-      - name: Upload Bitcoin Testnet app binary
+      - name: Upload Avian Testnet app binary
         uses: actions/upload-artifact@v2
         with:
-          name: bitcoin-testnet-app-${{ matrix.model }}
-          path: bitcoin-testnet-bin
+          name: avian-testnet-app-${{ matrix.model }}
+          path: avian-testnet-bin
 
   job_unit_test:
     name: Unit test
@@ -91,7 +91,7 @@ jobs:
           name: codecov-app-bitcoin
           fail_ci_if_error: true
           verbose: true
-      
+
       - name: HTML documentation
         run: doxygen .doxygen/Doxyfile
 
@@ -128,7 +128,7 @@ jobs:
       - name: Clone
         uses: actions/checkout@v2
 
-      - name: Download Bitcoin Testnet app binary
+      - name: Download Avian Testnet app binary
         uses: actions/download-artifact@v2
         with:
           name: bitcoin-testnet-app-${{matrix.model}}
@@ -181,7 +181,7 @@ jobs:
           PYTHONPATH=$PYTHONPATH:/speculos pytest --headless --model=${{ matrix.model }} --timeout=300
 
   job_test_python_lib_legacyapp:
-    name: Tests with the Python library and legacy Bitcoin app
+    name: Tests with the Python library and legacy Avian app
     needs: job_build
     runs-on: ubuntu-latest
 
@@ -206,7 +206,6 @@ jobs:
           pip install -r requirements.txt
           PYTHONPATH=$PYTHONPATH:/speculos pytest --headless --timeout=300
 
-
   job_test_js_lib:
     name: Tests with the JS library
     needs: job_build
@@ -230,16 +229,16 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: "16"
 
       - name: Install yarn
         run: |
           npm install -g yarn
 
-      - name: Download Bitcoin Testnet app binary
+      - name: Download Avian Testnet app binary
         uses: actions/download-artifact@v2
         with:
-          name: bitcoin-testnet-app-nanos
+          name: avian-testnet-app-nanos
           path: bin
 
       - name: Run tests
@@ -247,7 +246,6 @@ jobs:
           cd bitcoin_client_js
           yarn install
           LOG_SPECULOS=1 LOG_APDUS=1 SPECULOS="/speculos/speculos.py" yarn test
-
 
   job_test_rust_client:
     name: Tests for rust client library
